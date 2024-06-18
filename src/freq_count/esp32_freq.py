@@ -1,6 +1,7 @@
 from machine import Pin, PCNT, PWM
 from time import sleep_ms, sleep
 
+
 class FrequencyMeter:
     def __init__(self, input_pin_number):
         self.input_pin = Pin(input_pin_number, Pin.IN)
@@ -16,6 +17,7 @@ class FrequencyMeter:
         frequency = pulse_count / self.sample_time  # Calculate frequency
         return frequency
 
+
 if __name__ == "__main__":
     pulse_freq = 1_000
     pwm = PWM(Pin(23), freq=pulse_freq)
@@ -25,8 +27,8 @@ if __name__ == "__main__":
     for pulse_freq in range(10, 500_010, 1_000):
         pwm.freq(pulse_freq)
         sleep_ms(10)
-        #freq = calc_freq(pin)
+        # freq = calc_freq(pin)
         freq = fm.read_frequency()
-        perc_diff = 100 * abs((freq - pulse_freq)/pulse_freq)
+        perc_diff = 100 * abs((freq - pulse_freq) / pulse_freq)
         print(f"{freq:.2f},{pwm.freq()},{perc_diff:.2f}")
         sleep_ms(1)

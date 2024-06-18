@@ -1,6 +1,6 @@
 from machine import PWM, Pin
 from time import sleep_ms
-from frequency_counter import calc_freq
+from src.freq_count.frequency_counter import calc_freq
 
 if __name__ == "__main__":
     pulse_freq = 1_000
@@ -11,6 +11,6 @@ if __name__ == "__main__":
         pwm.freq(pulse_freq)
         sleep_ms(10)
         freq = calc_freq(pin)
-        perc_diff = 100*abs((freq - pulse_freq)/pulse_freq)
+        perc_diff = 100 * abs((freq - pulse_freq) / pulse_freq)
         print(f"{freq:.2f},{pwm.freq()},{perc_diff:.2f}")
         sleep_ms(1)

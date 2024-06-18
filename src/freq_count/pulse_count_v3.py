@@ -18,12 +18,14 @@ start = 0
 period = 0
 temp = 0
 
+
 # Interrupt Service Routine
 def isr(pin):
     global trig, start, period
     trig = time.ticks_cpu()
     period = machine.ticks_diff(trig, start)
     start = trig
+
 
 # Setup
 pin_int.irq(trigger=machine.Pin.IRQ_RISING, handler=isr)

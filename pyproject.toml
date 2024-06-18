@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "Micropython Frequeny Measurement Experiments"
+version = "0.1.0"
+description = "Work related to my for my PhD thesis."
+authors = ["Markus Kreitzer <markus@kreitzer.dev>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pyserial = "^3.5"
+docopt = "^0.6.2"
+adafruit-ampy = "^1.1.0"
+picoscope = "^0.7.31"
+matplotlib = "^3.9.0"
+pandas = "^2.2.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

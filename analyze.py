@@ -1,4 +1,5 @@
 import pandas as pd
+
 file_path = './freq_stats.csv'
 data = pd.read_csv(file_path)
 
