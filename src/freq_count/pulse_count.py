@@ -1,48 +1,49 @@
-from machine import Pin, Timer
-from time import sleep, sleep_ms, time_ns
+from machine import Pin, PWM, Timer
+from time import sleep_ms
+from uctypes import UINT32
+from math import ceil
+
+pulse_count_pin = Pin(22, Pin.IN, Pin.PULL_UP)
+pulse_freqs = range(32000, 200000, 5000)
+
+# Preallocate array we're going to stop values in.
+pulse_stats = [(0, 0)] * len(pulse_freqs)
+
+pulses: float = 0.001
+tim0 = Timer(0)
 
 
-class PulseCounter:
-
-    def __init__(self, input_pin_number: int, measurement_period_ms: int = 1000):
-        self.measurement_period_ms = measurement_period_ms
-        self.input_pin = Pin(input_pin_number, Pin.IN, Pin.PULL_UP)
-        self.ticks = 0
-        self.ticks_prev = 0
-        self.pulse_width = 0
-
-    def irq_handler(self, pin):
-        self.ticks = time_ns()
-        self.pulse_width = self.ticks - self.ticks_prev
-        self.ticks_prev = self.ticks
-
-    def measure(self):
-        # Set up the interrupt
-        self.input_pin.irq(trigger=Pin.IRQ_RISING, handler=self.irq_handler)
-        sleep_ms(self.measurement_period_ms)
-        self.input_pin.irq(handler=None)
-        return self.pulse_width
+def timer_done(k):
+    global pulse_count_pin
+    pulse_count_pin.irq(handler=None)
 
 
-if __name__ == "__main__":
-    from machine import PWM
+def ISR(boo):
+    global pulses
+    pulses += 1
 
-    fm = PulseCounter(22, 10)
-    pulse_freqs = range(10, 50000, 3000)
-    pulse_stats = [(1.0, 1.0)] * len(pulse_freqs)
 
-    for cnt, pulse_freq in enumerate(pulse_freqs):
-        pwm = PWM(Pin(23), freq=pulse_freq)
-        sleep_ms(100)  # Stabilize PWM
-        pulses = fm.measure()
-        print(f"PWM -vs- Calc: {pwm.freq()},{pulses / 1e9}")
-        if pulses == 0:
-            pulse_stats[cnt] = (1, 1)
-            continue
-        else:
-            pulse_stats[cnt] = (pulse_freq, 1e9 / pulses)
+for cnt, pulse_freq in enumerate(pulse_freqs):
+    pwm = PWM(Pin(23), freq=pulse_freq)
+    sleep_ms(100)  # Stabilize PWM
+    pulses = 0
+    if pulse_freq > 30000:
+        timer_ms = 1
+        pulse_count_pin.irq(trigger=Pin.IRQ_RISING, handler=ISR)
+        tim0.init(period=timer_ms, mode=Timer.ONE_SHOT, callback=timer_done)
+        sleep_ms(timer_ms)
+        pulse_stats[cnt] = (pulse_freq, 1000 * pulses)
+        print(f"PWM -vs- Calc: {pwm.freq()},{1000 * pulses}")
+    else:
+        timer_ms = 1000
+        pulse_count_pin.irq(trigger=Pin.IRQ_RISING, handler=ISR)
+        tim0.init(period=timer_ms, mode=Timer.ONE_SHOT, callback=timer_done)
+        sleep_ms(timer_ms)
+        pulse_stats[cnt] = (pulse_freq, pulses)
+        print(f"PWM -vs- Calc: {pwm.freq()},{pulses}")
 
-    print("Percent Difference,Timer,Frequency,Pulses,Calculated Frequency")
-    for freq, my_pulses in pulse_stats:
-        perc_diff: float = 100.0 * (freq - my_pulses) / freq
-        print(f"{perc_diff:0.1f},{freq},{my_pulses}")
+print("Percent Difference,Timer,Frequency,Pulses,Calculated Frequency")
+for freq, my_pulses in pulse_stats:
+    perc_diff: float = 100.0 * (freq - my_pulses) / freq
+    calc_freq: float = my_pulses
+    print(f"{perc_diff:0.1f},{timer_ms},{freq},{my_pulses},{calc_freq:0.3f}")
